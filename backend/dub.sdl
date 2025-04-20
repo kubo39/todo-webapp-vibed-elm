@@ -1,0 +1,11 @@
+name "backend"
+description "todo-app backend"
+authors "Hiroki Noda"
+license "proprietary"
+
+dependency "vibe-http" version="~>1.2.2"
+dependency "vibe-d-postgresql" version="~>3.1.3"
+
+// This is a workaround for dropping openssl dependency
+dependency "vibe-stream:tls" version="~>1.1.1"
+subConfiguration "vibe-stream:tls" "notls"
