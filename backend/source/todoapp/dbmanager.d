@@ -10,8 +10,23 @@ import vibe.db.postgresql;
 
 import todoapp.task;
 
+///
+interface DBManager
+{
+    ///
+    Nullable!(Task[]) getTasks();
+    ///
+    Nullable!Task getTask(int id);
+    ///
+    Nullable!(Task[]) updateTask(int id, bool completed);
+    ///
+    Nullable!(Task[]) insertTask(string text);
+    ///
+    Nullable!(Task[]) deleteTask(int id);
+}
+
 /// データベース操作を集約
-struct DBManager
+final class PostgresManager : DBManager
 {
 private:
     PostgresClient client;
@@ -220,7 +235,7 @@ public:
 
 unittest
 {
-    auto db = DBManager("host=localhost dbname=postgres user=postgres password=postgres", 4, false);
+    auto db = new PostgresManager("host=localhost dbname=postgres user=postgres password=postgres", 4, false);
     db.execute(`
         CREATE TEMPORARY TABLE task (
             id SERIAL PRIMARY KEY,
