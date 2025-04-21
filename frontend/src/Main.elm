@@ -51,6 +51,9 @@ init _ =
 
 type Msg
   = GotTasks (Result Http.Error (List Task))
+  | GotCreatedTask (Result Http.Error (List Task))
+  | GotUpdatedTask (Result Http.Error (List Task))
+  | GotDeletedTask (Result Http.Error (List Task))
   | PostNewTask
   | UpdateField String
   | Check Int Bool
@@ -80,6 +83,45 @@ update msg model =
                | status = Failure
                , field = ""
                , errorMsg = "Failed to load tasks"
+           }, Cmd.none)
+
+    GotCreatedTask result ->
+      case result of
+        Ok _ ->
+          ({ model
+               | errorMsg = ""
+           }, getTasks)
+        Err _ ->
+          ({ model
+               | status = Failure
+               , field = ""
+               , errorMsg = "Failed to create task"
+           }, Cmd.none)
+
+    GotUpdatedTask result ->
+      case result of
+        Ok _ ->
+          ({ model
+               | errorMsg = ""
+           }, getTasks)
+        Err _ ->
+          ({ model
+               | status = Failure
+               , field = ""
+               , errorMsg = "Failed to update task"
+           }, Cmd.none)
+
+    GotDeletedTask result ->
+      case result of
+        Ok _ ->
+          ({ model
+               | errorMsg = ""
+           }, getTasks)
+        Err _ ->
+          ({ model
+               | status = Failure
+               , field = ""
+               , errorMsg = "Failed to delete task"
            }, Cmd.none)
 
     PostNewTask ->
@@ -211,7 +253,7 @@ postTask text =
   Http.post
     { url = "http://127.0.0.1:8080/tasks"
     , body = Http.jsonBody (taskEncoder text)
-    , expect = Http.expectJson GotTasks tasksDecoder
+    , expect = Http.expectJson GotCreatedTask tasksDecoder
     }
 
 updateTask : Int -> Bool -> Cmd Msg
@@ -219,7 +261,7 @@ updateTask id completed =
   Http.post
     { url = "http://127.0.0.1:8080/tasks/" ++ String.fromInt id
     , body = Http.jsonBody (taskEncoder2 completed)
-    , expect = Http.expectJson GotTasks tasksDecoder
+    , expect = Http.expectJson GotUpdatedTask tasksDecoder
     }
 
 deleteTask : Int -> Cmd Msg
@@ -231,7 +273,7 @@ deleteTask id =
     ]
     , url = "http://127.0.0.1:8080/tasks/" ++ String.fromInt id
     , body = Http.emptyBody
-    , expect = Http.expectJson GotTasks tasksDecoder
+    , expect = Http.expectJson GotDeletedTask tasksDecoder
     , timeout = Nothing
     , tracker = Nothing
     }
