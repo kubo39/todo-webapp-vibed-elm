@@ -136,9 +136,11 @@ void deleteTask(HTTPServerRequest req, HTTPServerResponse res)
 }
 
 ///
+version(unittest) {}
+else
 shared static this()
 {
-    db = DBManager("host=postgres dbname=postgres user=postgres password=postgres");
+    db = new PostgresManager("host=postgres dbname=postgres user=postgres password=postgres");
 }
 
 int main()
@@ -163,4 +165,48 @@ int main()
 
     logInfo("Please open http://127.0.0.1:8080/ in your browser.");
     return runApplication();
+}
+
+
+/// smoke test
+unittest
+{
+    class SmokeMockDBManager : DBManager
+    {
+        Nullable!(Task[]) getTasks()
+        {
+            auto task = Task(1, "test", false, DateTime(2000, 6, 1, 10, 30, 0));
+            return [task].nullable;
+        }
+        Nullable!Task getTask(int id)
+        {
+            auto task = Task(id, "test", false, DateTime(2000, 6, 1, 10, 30, 0));
+            return task.nullable;
+        }
+        Nullable!(Task[]) updateTask(int id, bool completed)
+        {
+            auto task = Task(id, "test", completed, DateTime(2000, 6, 1, 10, 30, 0));
+            return task.nullable;
+        }
+        Nullable!(Task[]) insertTask(string text)
+        {
+            auto task = Task(1, text, true, DateTime(2000, 6, 1, 10, 30, 0));
+            return [task].nullable;
+        }
+        Nullable!(Task[]) deleteTask(int id)
+        {
+            auto task = Task(id, "test", true, DateTime(2000, 6, 1, 10, 30, 0));
+            return [task].nullable;
+        }
+    }
+
+    db = new SmokeMockDBManager;
+
+    // from vibe-http.
+    auto req = createTestHTTPServerRequest("http://example.com");
+    auto res = createTestHTTPServerResponse();
+    getTasks(req, res);
+    res.finalize();
+    assert(res.statusCode == 200);
+    assert(res.bytesWritteln > 0);
 }
