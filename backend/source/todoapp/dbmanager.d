@@ -1,7 +1,6 @@
 module todoapp.dbmanager;
 
 import std.datetime : DateTime;
-import std.encoding : sanitize;
 import std.typecons : Nullable, nullable;
 
 import vibe.core.log;

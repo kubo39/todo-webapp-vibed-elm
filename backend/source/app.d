@@ -1,7 +1,6 @@
 module app;
 
 import std.conv : ConvException, to;
-import std.encoding : sanitize;
 import std.exception : enforce;
 import std.process : environment;
 
@@ -124,7 +123,7 @@ void deleteTask(HTTPServerRequest req, HTTPServerResponse res)
     try postId = req.params["id"].to!int;
     catch (ConvException e)
     {
-        logError("Request parameter \"id\" parse error: %s", e.toString.sanitize);
+        logError("Request parameter \"id\" parse error: %s", e.toString);
         cast(void) enforceBadRequest(false);
     }
     auto tasks = db.deleteTask(postId);
