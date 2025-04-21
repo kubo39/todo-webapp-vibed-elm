@@ -1,0 +1,6 @@
+.editorconfig
+.git
+.gitignore
+backend/*-test-library
+compose.yaml
+frontend
