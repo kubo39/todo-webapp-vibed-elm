@@ -203,7 +203,7 @@ public:
             );
             return tasks.nullable;
         }
-        catch (ConnectionException e)
+        catch (Exception e)
         {
             logError(e.toString);
             return typeof(return).init;
