@@ -51,9 +51,9 @@ init _ =
 
 type Msg
   = GotTasks (Result Http.Error (List Task))
-  | GotCreatedTask (Result Http.Error (List Task))
-  | GotUpdatedTask (Result Http.Error (List Task))
-  | GotDeletedTask (Result Http.Error (List Task))
+  | GotCreatedTask (Result Http.Error Task)
+  | GotUpdatedTask (Result Http.Error Task)
+  | GotDeletedTask (Result Http.Error Task)
   | PostNewTask
   | UpdateField String
   | Check Int Bool
@@ -253,7 +253,7 @@ postTask text =
   Http.post
     { url = "http://127.0.0.1:8080/tasks"
     , body = Http.jsonBody (taskEncoder text)
-    , expect = Http.expectJson GotCreatedTask tasksDecoder
+    , expect = Http.expectJson GotCreatedTask taskDecoder
     }
 
 updateTask : Int -> Bool -> Cmd Msg
@@ -261,7 +261,7 @@ updateTask id completed =
   Http.post
     { url = "http://127.0.0.1:8080/tasks/" ++ String.fromInt id
     , body = Http.jsonBody (taskEncoder2 completed)
-    , expect = Http.expectJson GotUpdatedTask tasksDecoder
+    , expect = Http.expectJson GotUpdatedTask taskDecoder
     }
 
 deleteTask : Int -> Cmd Msg
@@ -273,7 +273,7 @@ deleteTask id =
     ]
     , url = "http://127.0.0.1:8080/tasks/" ++ String.fromInt id
     , body = Http.emptyBody
-    , expect = Http.expectJson GotDeletedTask tasksDecoder
+    , expect = Http.expectJson GotDeletedTask taskDecoder
     , timeout = Nothing
     , tracker = Nothing
     }

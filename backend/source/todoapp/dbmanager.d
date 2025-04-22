@@ -18,11 +18,11 @@ interface DBManager
     ///
     Nullable!Task getTask(int id);
     ///
-    Nullable!(Task[]) updateTask(int id, bool completed);
+    Nullable!Task updateTask(int id, bool completed);
     ///
-    Nullable!(Task[]) insertTask(string text);
+    Nullable!Task insertTask(string text);
     ///
-    Nullable!(Task[]) deleteTask(int id);
+    Nullable!Task deleteTask(int id);
 }
 
 /// データベース操作を集約
@@ -34,9 +34,41 @@ private:
     enum
     {
         GET_TASK_QUERY = "SELECT * FROM task where task.id = $1",
-        UPDATE_TASK_QUERY = "UPDATE task SET completed = $1 WHERE task.id = $2 RETURNING *",
+        UPDATE_TASK_QUERY = "UPDATE task SET completed = $2 WHERE task.id = $1 RETURNING *",
         INSERT_TASK_QUERY = "INSERT INTO task (text,created_at) VALUES($1,now()) RETURNING *",
         DELETE_TASK_QUERY = "DELETE FROM task WHERE task.id = $1 RETURNING *",
+    }
+
+    Nullable!Task doQuery(string statementName, ARGS...)(ARGS args)
+    {
+        try
+        {
+            auto task = typeof(return).init;
+            client.pickConnection(
+                (scope conn)
+                {
+                    QueryParams params;
+                    params.preparedStatementName = statementName;
+                    params.argsVariadic(args);
+                    auto rows = conn.execPreparedStatement(params);
+                    if (rows.length)
+                    {
+                        task = Task(
+                            rows[0]["id"].as!PGinteger,
+                            rows[0]["text"].as!PGtext,
+                            rows[0]["completed"].as!PGboolean,
+                            rows[0]["created_at"].as!PGtimestamp.dateTime
+                        );
+                    }
+                }
+            );
+            return task;
+        }
+        catch (Exception e)
+        {
+            logError(e.toString);
+            return typeof(return).init;
+        }
     }
 
 public:
@@ -95,133 +127,25 @@ public:
     /// IDに紐づくTODOタスクを取得
     Nullable!Task getTask(int id)
     {
-        try
-        {
-            auto task = typeof(return).init;
-            client.pickConnection(
-                (scope conn)
-                {
-                    QueryParams p;
-                    p.preparedStatementName = GET_TASK_QUERY;
-                    p.argsVariadic(id);
-                    auto rows = conn.execPreparedStatement(p);
-                    if (rows.length)
-                    {
-                        task = Task(
-                            rows[0]["id"].as!PGinteger,
-                            rows[0]["text"].as!PGtext,
-                            rows[0]["completed"].as!PGboolean,
-                            rows[0]["created_at"].as!PGtimestamp.dateTime
-                        );
-                    }
-                }
-            );
-            return task;
-        }
-        catch (Exception e)
-        {
-            logError(e.toString);
-            return typeof(return).init;
-        }
+        return doQuery!GET_TASK_QUERY(id);
     }
 
     /// TODOタスクの完了状態を更新
-    Nullable!(Task[]) updateTask(int id, bool completed)
+    Nullable!Task updateTask(int id, bool completed)
     {
-        Task[] tasks;
-        try
-        {
-            client.pickConnection(
-                (scope conn)
-                {
-                    QueryParams p;
-                    p.preparedStatementName = UPDATE_TASK_QUERY;
-                    p.argsVariadic(completed, id);
-                    auto rows = conn.execPreparedStatement(p);
-                    foreach (row; rows.rangify)
-                    {
-                        tasks ~= Task(
-                            row["id"].as!PGinteger,
-                            row["text"].as!PGtext,
-                            row["completed"].as!PGboolean,
-                            row["created_at"].as!PGtimestamp.dateTime
-                        );
-                    }
-                }
-            );
-            return tasks.nullable;
-        }
-        catch (Exception e)
-        {
-            logError(e.toString);
-            return typeof(return).init;
-        }
+        return doQuery!UPDATE_TASK_QUERY(id, completed);
     }
 
     /// 新規にTODOタスクを登録
-    Nullable!(Task[]) insertTask(string text)
+    Nullable!Task insertTask(string text)
     {
-        Task[] tasks;
-        try
-        {
-            client.pickConnection(
-                (scope conn)
-                {
-                    QueryParams p;
-                    p.preparedStatementName = INSERT_TASK_QUERY;
-                    p.argsVariadic(text);
-                    auto rows = conn.execPreparedStatement(p);
-                    foreach (row; rows.rangify)
-                    {
-                        tasks ~= Task(
-                            row["id"].as!PGinteger,
-                            row["text"].as!PGtext,
-                            row["completed"].as!PGboolean,
-                            row["created_at"].as!PGtimestamp.dateTime
-                        );
-                    }
-                }
-            );
-            return tasks.nullable;
-        }
-        catch (Exception e)
-        {
-            logError(e.toString);
-            return typeof(return).init;
-        }
+        return doQuery!INSERT_TASK_QUERY(text);
     }
 
     /// IDに紐づくTODOタスクを削除
-    Nullable!(Task[]) deleteTask(int id)
+    Nullable!Task deleteTask(int id)
     {
-        Task[] tasks;
-        try
-        {
-            client.pickConnection(
-                (scope conn)
-                {
-                    QueryParams p;
-                    p.preparedStatementName = DELETE_TASK_QUERY;
-                    p.argsVariadic(id);
-                    auto rows = conn.execPreparedStatement(p);
-                    foreach (row; rows.rangify)
-                    {
-                        tasks ~= Task(
-                            row["id"].as!PGinteger,
-                            row["text"].as!PGtext,
-                            row["completed"].as!PGboolean,
-                            row["created_at"].as!PGtimestamp.dateTime
-                        );
-                    }
-                }
-            );
-            return tasks.nullable;
-        }
-        catch (Exception e)
-        {
-            logError(e.toString);
-            return typeof(return).init;
-        }
+        return doQuery!DELETE_TASK_QUERY(id);
     }
 
     // For testing purposes only.
@@ -258,7 +182,7 @@ unittest
 
     const updated = db.updateTask(task.id, true);
     assert(!updated.isNull);
-    assert(updated.get[0].completed);
+    assert(updated.get.completed);
 
     const deleted = db.deleteTask(task.id);
     assert(!deleted.isNull);
