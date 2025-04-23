@@ -180,23 +180,23 @@ unittest
         }
         Nullable!Task getTask(int id)
         {
-            auto task = Task(id, "test", false, DateTime(2000, 6, 1, 10, 30, 0));
-            return task.nullable;
+            return Task(id, "test", false, DateTime(2000, 6, 1, 10, 30, 0))
+                .nullable;
         }
         Nullable!Task updateTask(int id, bool completed)
         {
-            auto task = Task(id, "test", completed, DateTime(2000, 6, 1, 10, 30, 0));
-            return task.nullable;
+            return Task(id, "test", completed, DateTime(2000, 6, 1, 10, 30, 0))
+                .nullable;
         }
         Nullable!Task insertTask(string text)
         {
-            auto task = Task(1, text, true, DateTime(2000, 6, 1, 10, 30, 0));
-            return [task].nullable;
+            return Task(1, text, true, DateTime(2000, 6, 1, 10, 30, 0))
+                .nullable;
         }
         Nullable!Task deleteTask(int id)
         {
-            auto task = Task(id, "test", true, DateTime(2000, 6, 1, 10, 30, 0));
-            return [task].nullable;
+            return Task(id, "test", true, DateTime(2000, 6, 1, 10, 30, 0))
+                .nullable;
         }
     }
 
