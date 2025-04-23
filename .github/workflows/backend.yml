@@ -17,9 +17,9 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.dub
-          key: dub-${{ hashFiles('./backend/dub.selections.json') }}
+          key: ${{ runner.os }}-dub-${{ hashFiles('./backend/dub.selections.json') }}
           restore-keys: |
-            dub-
+            ${{ runner.os }}-dub-
       - name: Run lint
         run: make lint-backend
       
