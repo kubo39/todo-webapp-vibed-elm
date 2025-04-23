@@ -1,13 +1,12 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Browser
 import Html exposing (Html, button, div, header, h1, input, li, section, text, ul)
-import Html.Attributes exposing (placeholder)
+import Html.Attributes exposing (placeholder, type_)
 import Html.Events exposing (onClick)
 import Http
-import Json.Decode exposing (..)
+import Json.Decode exposing (Decoder)
 import Json.Encode exposing (Value)
-import Html.Attributes exposing (type_)
 
 -- MAIN
 
