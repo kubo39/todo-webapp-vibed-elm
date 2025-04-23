@@ -35,7 +35,7 @@ private:
     {
         GET_TASK_QUERY = "SELECT * FROM task where task.id = $1",
         UPDATE_TASK_QUERY = "UPDATE task SET completed = $2 WHERE task.id = $1 RETURNING *",
-        INSERT_TASK_QUERY = "INSERT INTO task (text,created_at) VALUES($1,now()) RETURNING *",
+        INSERT_TASK_QUERY = "INSERT INTO task (text) VALUES($1) RETURNING *",
         DELETE_TASK_QUERY = "DELETE FROM task WHERE task.id = $1 RETURNING *",
     }
 
@@ -165,7 +165,7 @@ unittest
             id SERIAL PRIMARY KEY,
             text TEXT,
             completed BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
         )
     `);
     db.sendPreparedStatements();
