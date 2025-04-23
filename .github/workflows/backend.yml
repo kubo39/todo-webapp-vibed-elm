@@ -47,9 +47,9 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.dub
-          key: dub-${{ hashFiles('./backend/dub.selections.json') }}
+          key: ${{ runner.os }}-dub-${{ hashFiles('./backend/dub.selections.json') }}
           restore-keys: |
-            dub-
+            ${{ runner.os }}-dub-
       - name: install postgres dependencies
         run: sudo apt-get update && sudo apt-get -y install libpq-dev
       - name: Run test

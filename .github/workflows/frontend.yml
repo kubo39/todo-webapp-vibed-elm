@@ -29,9 +29,9 @@ jobs:
         with:
           path: |
             ./frontend/node_modules
-          key: elm-review-${{ hashFiles('./frontend/package-lock.json') }}
+          key: ${{ runner.os }}-elm-review-${{ hashFiles('./frontend/package-lock.json') }}
           restore-keys: |
-            elm-review-
+            ${{ runner.os }}-elm-review-
       - name: Install elm-review
         run: make -C frontend install-linter
       - name: Run elm-review
