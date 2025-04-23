@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  build-only-check:
+  build-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,3 +16,23 @@ jobs:
           elm-version: 0.19.1
       - name: Build
         run: make build-frontend
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jorelali/setup-elm@v6
+        with:
+          elm-version: 0.19.1
+      - name: cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./frontend/node_modules
+          key: elm-review-${{ hashFiles('./frontend/package-lock.json') }}
+          restore-keys: |
+            elm-review-
+      - name: Install elm-review
+        run: make -C frontend install-linter
+      - name: Run elm-review
+        run: make lint-frontend
