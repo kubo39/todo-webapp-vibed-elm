@@ -5,6 +5,9 @@ on:
     branches:
       - main
   pull_request:
+    paths:
+      - 'frontend/**'
+      - '!frontend/.gitignore'
 
 jobs:
   build-check:
