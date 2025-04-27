@@ -1,7 +1,7 @@
 module todoapp.dbmanager;
 
 import std.datetime : DateTime;
-import std.typecons : Nullable, nullable;
+import std.exception : enforce;
 
 import vibe.core.log;
 
@@ -14,15 +14,24 @@ import todoapp.task;
 interface DBManager
 {
     ///
-    Nullable!(Task[]) getTasks();
+    Task[] getTasks();
     ///
-    Nullable!Task getTask(int id);
+    Task getTask(int id);
     ///
-    Nullable!Task updateTask(int id, bool completed);
+    Task updateTask(int id, bool completed);
     ///
-    Nullable!Task insertTask(string text);
+    Task insertTask(string text);
     ///
-    Nullable!Task deleteTask(int id);
+    Task deleteTask(int id);
+}
+
+///
+class TaskNotFound : Exception
+{
+    ///
+    this(string msg, string file = __FILE__, size_t line = __LINE__) {
+        super(msg, file, line);
+    }
 }
 
 /// データベース操作を集約
@@ -39,36 +48,26 @@ private:
         DELETE_TASK_QUERY = "DELETE FROM task WHERE task.id = $1 RETURNING *",
     }
 
-    Nullable!Task doQuery(string statementName, ARGS...)(ARGS args)
+    Task doQuery(string statementName, ARGS...)(ARGS args)
     {
-        try
-        {
-            auto task = typeof(return).init;
-            client.pickConnection(
-                (scope conn)
-                {
-                    QueryParams params;
-                    params.preparedStatementName = statementName;
-                    params.argsVariadic(args);
-                    auto rows = conn.execPreparedStatement(params);
-                    if (rows.length)
-                    {
-                        task = Task(
-                            rows[0]["id"].as!PGinteger,
-                            rows[0]["text"].as!PGtext,
-                            rows[0]["completed"].as!PGboolean,
-                            rows[0]["created_at"].as!PGtimestamp.dateTime
-                        );
-                    }
-                }
-            );
-            return task;
-        }
-        catch (Exception e)
-        {
-            logError(e.toString);
-            return typeof(return).init;
-        }
+        Task task;
+        client.pickConnection(
+            (scope conn)
+            {
+                QueryParams params;
+                params.preparedStatementName = statementName;
+                params.argsVariadic(args);
+                auto rows = conn.execPreparedStatement(params);
+                enforce!TaskNotFound(rows.length, "task not found");
+                task = Task(
+                    rows[0]["id"].as!PGinteger,
+                    rows[0]["text"].as!PGtext,
+                    rows[0]["completed"].as!PGboolean,
+                    rows[0]["created_at"].as!PGtimestamp.dateTime
+                );
+            }
+        );
+        return task;
     }
 
 public:
@@ -95,55 +94,47 @@ public:
     }
 
     ///ToDoタスク一覧を取得
-    Nullable!(Task[]) getTasks()
+    Task[] getTasks()
     {
         Task[] tasks;
-        try
-        {
-            client.pickConnection(
-                (scope conn)
+        client.pickConnection(
+            (scope conn)
+            {
+                auto rows = conn.execStatement("SELECT * FROM task ORDER BY id ASC");
+                foreach (row; rows.rangify)
                 {
-                    auto rows = conn.execStatement("SELECT * FROM task ORDER BY id ASC");
-                    foreach (row; rows.rangify)
-                    {
-                        tasks ~= Task(
-                            row["id"].as!PGinteger,
-                            row["text"].as!PGtext,
-                            row["completed"].as!PGboolean,
-                            row["created_at"].as!PGtimestamp.dateTime
-                        );
-                    }
+                    tasks ~= Task(
+                        row["id"].as!PGinteger,
+                        row["text"].as!PGtext,
+                        row["completed"].as!PGboolean,
+                        row["created_at"].as!PGtimestamp.dateTime
+                    );
                 }
-            );
-            return tasks.nullable;
-        }
-        catch (Exception e)
-        {
-            logError(e.toString);
-            return typeof(return).init;
-        }
+            }
+        );
+        return tasks;
     }
 
     /// IDに紐づくTODOタスクを取得
-    Nullable!Task getTask(int id)
+    Task getTask(int id)
     {
         return doQuery!GET_TASK_QUERY(id);
     }
 
     /// TODOタスクの完了状態を更新
-    Nullable!Task updateTask(int id, bool completed)
+    Task updateTask(int id, bool completed)
     {
         return doQuery!UPDATE_TASK_QUERY(id, completed);
     }
 
     /// 新規にTODOタスクを登録
-    Nullable!Task insertTask(string text)
+    Task insertTask(string text)
     {
         return doQuery!INSERT_TASK_QUERY(text);
     }
 
     /// IDに紐づくTODOタスクを削除
-    Nullable!Task deleteTask(int id)
+    Task deleteTask(int id)
     {
         return doQuery!DELETE_TASK_QUERY(id);
     }
@@ -159,6 +150,8 @@ public:
 
 unittest
 {
+    import std.exception : assertThrown;
+
     auto db = new PostgresManager("host=localhost dbname=postgres user=postgres password=postgres", 4, false);
     db.execute(`
         CREATE TEMPORARY TABLE task (
@@ -172,21 +165,17 @@ unittest
 
     const content = "Test task 1";
     const inserted = db.insertTask(content);
-    assert(!inserted.isNull);
+    assert(!inserted.completed);
 
     const tasks = db.getTasks();
-    assert(!tasks.isNull);
-    const task = tasks.get[0];
-    assert(task.text == content);
-    assert(!task.completed);
+    assert(tasks[0].text == content);
+    assert(!tasks[0].completed);
 
-    const updated = db.updateTask(task.id, true);
-    assert(!updated.isNull);
-    assert(updated.get.completed);
+    const updated = db.updateTask(tasks[0].id, true);
+    assert(updated.completed);
 
-    const deleted = db.deleteTask(task.id);
-    assert(!deleted.isNull);
+    const deleted = db.deleteTask(tasks[0].id);
+    assert(deleted.id == tasks[0].id);
 
-    const got = db.getTask(task.id);
-    assert(got.isNull);
+    assertThrown!TaskNotFound(db.getTask(tasks[0].id));
 }
