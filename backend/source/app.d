@@ -36,10 +36,13 @@ void getIndex(HTTPServerRequest _, HTTPServerResponse res)
 ///
 void getTasks(HTTPServerRequest _, HTTPServerResponse res)
 {
-    auto tasks = db.getTasks();
-    if (tasks.isNull)
+    Task[] tasks;
+    try tasks = db.getTasks();
+    catch (Exception e)
     {
-        res.writeJsonBody(Json.emptyObject, 500);
+        logError(e.toString);
+        Json j = Json(["message": Json("something is wrong")]);
+        res.writeJsonBody(j, 500);
         return;
     }
     res.writeJsonBody(tasks, 200);
@@ -53,13 +56,25 @@ void getTask(HTTPServerRequest req, HTTPServerResponse res)
     catch (ConvException e)
     {
         logError("Request parameter \"id\" parse error: %s", e.toString);
-        cast(void) enforceBadRequest(false);
+        Json j = Json(["message": Json("invalid id")]);
+        res.writeJsonBody(j, 400);
+        return;
     }
 
-    auto task = db.getTask(postId);
-    if (task.isNull)
+    Task task;
+    try task = db.getTask(postId);
+    catch (TaskNotFound e)
     {
-        res.writeJsonBody(Json.emptyObject, 404);
+        logError(e.toString);
+        Json j = Json(["message": Json("task not found")]);
+        res.writeJsonBody(j, 500);
+        return;
+    }
+    catch (Exception e)
+    {
+        logError(e.toString);
+        Json j = Json(["message": Json("something is wrong")]);
+        res.writeJsonBody(j, 500);
         return;
     }
     res.writeJsonBody(task, 200);
@@ -75,22 +90,36 @@ void postTaskUpdate(HTTPServerRequest req, HTTPServerResponse res)
     catch (ConvException e)
     {
         logError("Request parameter \"id\" parse error: %s", e.toString);
-        cast(void) enforceBadRequest(false);
+        Json j = Json(["message": Json("invalid id")]);
+        res.writeJsonBody(j, 400);
+        return;
     }
     try completed = req.json["completed"].get!bool;
     catch (ConvException e)
     {
         logError("Request parameter \"completed\" parse error: %s", e.toString);
-        cast(void) enforceBadRequest(false);
-    }
-
-    auto tasks = db.updateTask(postId, completed);
-    if (tasks.isNull)
-    {
-        res.writeJsonBody(Json.emptyObject, 500);
+        Json j = Json(["message": Json("invalid completed status")]);
+        res.writeJsonBody(j, 400);
         return;
     }
-    res.writeJsonBody(tasks, 200);
+
+    Task task;
+    try task = db.updateTask(postId, completed);
+    catch (TaskNotFound e)
+    {
+        logError(e.toString);
+        Json j = Json(["message": Json("task not found")]);
+        res.writeJsonBody(j, 500);
+        return;
+    }
+    catch (Exception e)
+    {
+        logError(e.toString);
+        Json j = Json(["message": Json("something is wrong")]);
+        res.writeJsonBody(j, 500);
+        return;
+    }
+    res.writeJsonBody(task, 200);
 }
 
 ///
@@ -99,21 +128,37 @@ void postTaskNew(HTTPServerRequest req, HTTPServerResponse res)
     const text = req.json["text"].get!string;
     if (text.length > 80)
     {
-        cast(void) enforceBadRequest(false, "タスクのテキストが長すぎます");
+        logError("text is too long");
+        Json j = Json(["message": Json("タスクのテキストが長すぎます")]);
+        res.writeJsonBody(j, 400);
+        return;
     }
 
     if (text.length == 0)
     {
-        res.writeJsonBody(Json.emptyObject, 400);
+        logError("text is empty");
+        Json j = Json(["message": Json("テキストが空です")]);
+        res.writeJsonBody(j, 400);
         return;
     }
-    auto tasks = db.insertTask(text);
-    if (tasks.isNull)
+
+    Task task;
+    try task = db.insertTask(text);
+    catch (TaskNotFound e)
     {
-        res.writeJsonBody(Json.emptyObject, 500);
+        logError(e.toString);
+        Json j = Json(["message": Json("task not found")]);
+        res.writeJsonBody(j, 500);
         return;
     }
-    res.writeJsonBody(tasks, 200);
+    catch (Exception e)
+    {
+        logError(e.toString);
+        Json j = Json(["message": Json("something is wrong")]);
+        res.writeJsonBody(j, 500);
+        return;
+    }
+    res.writeJsonBody(task, 200);
 }
 
 ///
@@ -124,15 +169,27 @@ void deleteTask(HTTPServerRequest req, HTTPServerResponse res)
     catch (ConvException e)
     {
         logError("Request parameter \"id\" parse error: %s", e.toString);
-        cast(void) enforceBadRequest(false);
+        Json j = Json(["message": Json("invalid id")]);
+        res.writeJsonBody(j, 400);
     }
-    auto tasks = db.deleteTask(postId);
-    if (tasks.isNull)
+
+    Task task;
+    try task = db.deleteTask(postId);
+    catch (TaskNotFound e)
     {
-        res.writeJsonBody(Json.emptyObject, 500);
+        logError(e.toString);
+        Json j = Json(["message": Json("task not found")]);
+        res.writeJsonBody(j, 500);
         return;
     }
-    res.writeJsonBody(tasks, 200);
+    catch (Exception e)
+    {
+        logError(e.toString);
+        Json j = Json(["message": Json("something is wrong")]);
+        res.writeJsonBody(j, 500);
+        return;
+    }
+    res.writeJsonBody(task, 200);
 }
 
 ///
@@ -173,30 +230,26 @@ unittest
 {
     class SmokeMockDBManager : DBManager
     {
-        Nullable!(Task[]) getTasks()
+        Task[] getTasks()
         {
             auto task = Task(1, "test", false, DateTime(2000, 6, 1, 10, 30, 0));
-            return [task].nullable;
+            return [task];
         }
-        Nullable!Task getTask(int id)
+        Task getTask(int id)
         {
-            return Task(id, "test", false, DateTime(2000, 6, 1, 10, 30, 0))
-                .nullable;
+            return Task(id, "test", false, DateTime(2000, 6, 1, 10, 30, 0));
         }
-        Nullable!Task updateTask(int id, bool completed)
+        Task updateTask(int id, bool completed)
         {
-            return Task(id, "test", completed, DateTime(2000, 6, 1, 10, 30, 0))
-                .nullable;
+            return Task(id, "test", completed, DateTime(2000, 6, 1, 10, 30, 0));
         }
-        Nullable!Task insertTask(string text)
+        Task insertTask(string text)
         {
-            return Task(1, text, true, DateTime(2000, 6, 1, 10, 30, 0))
-                .nullable;
+            return Task(1, text, true, DateTime(2000, 6, 1, 10, 30, 0));
         }
-        Nullable!Task deleteTask(int id)
+        Task deleteTask(int id)
         {
-            return Task(id, "test", true, DateTime(2000, 6, 1, 10, 30, 0))
-                .nullable;
+            return Task(id, "test", true, DateTime(2000, 6, 1, 10, 30, 0));
         }
     }
 
@@ -205,6 +258,7 @@ unittest
     // from vibe-http.
     auto req = createTestHTTPServerRequest("http://example.com");
     auto res = createTestHTTPServerResponse();
+
     getTasks(req, res);
     res.finalize();
     assert(res.statusCode == 200);
