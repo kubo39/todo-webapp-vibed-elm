@@ -63,7 +63,7 @@ private:
                     rows[0]["id"].as!PGinteger,
                     rows[0]["text"].as!PGtext,
                     rows[0]["completed"].as!PGboolean,
-                    rows[0]["created_at"].as!PGtimestamp.dateTime
+                    rows[0]["created_at"].as!PGtimestamptz.dateTime
                 );
             }
         );
@@ -107,7 +107,7 @@ public:
                         row["id"].as!PGinteger,
                         row["text"].as!PGtext,
                         row["completed"].as!PGboolean,
-                        row["created_at"].as!PGtimestamp.dateTime
+                        row["created_at"].as!PGtimestamptz.dateTime
                     );
                 }
             }
@@ -158,7 +158,7 @@ unittest
             id SERIAL PRIMARY KEY,
             text TEXT,
             completed BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
         )
     `);
     db.sendPreparedStatements();
