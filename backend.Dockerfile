@@ -16,9 +16,14 @@ RUN set -eux; \
         libpq-dev; \
     rm -fr /var/lib/apt/lists/*
 
-COPY . .
-
-RUN make build-backend
+RUN --mount=type=cache,target=/root/.dub/packages/,sharing=locked \
+    --mount=type=cache,target=/root/.dub/cache/,sharing=locked \
+    --mount=type=bind,source=./backend,target=/app/backend \
+    make -C /app/backend fetch
+RUN --mount=type=cache,target=/root/.dub/packages/,sharing=locked \
+    --mount=type=cache,target=/root/.dub/cache/,sharing=locked \
+    --mount=type=bind,source=./backend,target=/app/backend \
+    make -C /app/backend build
 
 FROM debian:bookworm-slim AS final
 
@@ -40,10 +45,10 @@ USER appuser
 
 WORKDIR /app
 COPY /public /public
-COPY --from=build /app/backend/backend /app
+COPY --from=build /bin/server /app
 
 ENV SERVER_HOST="0.0.0.0"
 
 EXPOSE 8080
 
-ENTRYPOINT [ "/app/backend" ]
+ENTRYPOINT [ "/app/server" ]

@@ -5,6 +5,9 @@ all: build
 build:
 	dub build
 
+fetch:
+	dub fetch
+
 run:
 	dub run
 

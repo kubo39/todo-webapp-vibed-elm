@@ -3,6 +3,10 @@ description "todo-app backend"
 authors "Hiroki Noda"
 license "proprietary"
 
+targetPath "/bin"
+targetName "server"
+targetType "executable"
+
 dependency "vibe-http" version="~>1.2.2"
 dependency "vibe-d-postgresql" version="~>3.1.3"
 
