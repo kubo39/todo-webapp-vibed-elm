@@ -200,6 +200,8 @@ shared static this()
     db = new PostgresManager("host=postgres dbname=postgres user=postgres password=postgres");
 }
 
+version(unittest) {}
+else
 int main()
 {
     auto settings = new HTTPServerSettings;
@@ -228,6 +230,10 @@ int main()
 /// smoke test
 unittest
 {
+    import std.datetime;
+    import vibe.inet.url : URL;
+    import vibe.stream.memory : createMemoryOutputStream;
+
     class SmokeMockDBManager : DBManager
     {
         Task[] getTasks()
@@ -255,12 +261,18 @@ unittest
 
     db = new SmokeMockDBManager;
 
-    // from vibe-http.
-    auto req = createTestHTTPServerRequest("http://example.com");
-    auto res = createTestHTTPServerResponse();
+    // Use test utilities from vibe-http.
+    auto req = createTestHTTPServerRequest(URL("http://example.com"), HTTPMethod.GET);
+    auto output = createMemoryOutputStream();
+    auto res = createTestHTTPServerResponse(output, null, TestHTTPResponseMode.bodyOnly);
 
     getTasks(req, res);
     res.finalize();
+
     assert(res.statusCode == 200);
-    assert(res.bytesWritteln > 0);
+    Json value = (cast(string) output.data).parseJsonString;
+    assert(value[0]["id"] == Json(1));
+    assert(value[0]["text"] == Json("test"));
+    assert(value[0]["completed"] == Json(false));
+    assert(value[0]["createdAt"] == Json("2000-06-01T10:30:00"));
 }
