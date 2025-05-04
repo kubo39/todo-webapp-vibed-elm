@@ -3,7 +3,7 @@
 all: build
 
 build:
-	dub build
+	dub build --config=application
 
 fetch:
 	dub fetch
@@ -15,7 +15,7 @@ lint:
 	dub lint
 
 test:
-	dub test
+	dub test --config=unittest
 
 clean:
 	dub clean
