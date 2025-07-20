@@ -161,13 +161,6 @@ void postTaskNew(HTTPServerRequest req, HTTPServerResponse res)
 
     Task task;
     try task = db.insertTask(text);
-    catch (TaskNotFound e)
-    {
-        logError(e.toString);
-        Json j = Json(["message": Json("task not found")]);
-        res.writeJsonBody(j, 500);
-        return;
-    }
     catch (Exception e)
     {
         logError(e.toString);
