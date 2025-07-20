@@ -67,7 +67,7 @@ void getTask(HTTPServerRequest req, HTTPServerResponse res)
     {
         logError(e.toString);
         Json j = Json(["message": Json("task not found")]);
-        res.writeJsonBody(j, 500);
+        res.writeJsonBody(j, 404);
         return;
     }
     catch (Exception e)
@@ -94,6 +94,15 @@ void postTaskUpdate(HTTPServerRequest req, HTTPServerResponse res)
         res.writeJsonBody(j, 400);
         return;
     }
+
+    if (postId <= 0)
+    {
+        logError("Invalid task ID: %d", postId);
+        Json j = Json(["message": Json("invalid task ID")]);
+        res.writeJsonBody(j, 400);
+        return;
+    }
+
     try completed = req.json["completed"].get!bool;
     catch (ConvException e)
     {
@@ -109,7 +118,7 @@ void postTaskUpdate(HTTPServerRequest req, HTTPServerResponse res)
     {
         logError(e.toString);
         Json j = Json(["message": Json("task not found")]);
-        res.writeJsonBody(j, 500);
+        res.writeJsonBody(j, 404);
         return;
     }
     catch (Exception e)
@@ -125,7 +134,15 @@ void postTaskUpdate(HTTPServerRequest req, HTTPServerResponse res)
 ///
 void postTaskNew(HTTPServerRequest req, HTTPServerResponse res)
 {
-    const text = req.json["text"].get!string;
+    string text;
+    try text = req.json["text"].get!string;
+    catch (Exception e)
+    {
+        logError("Request parameter \"text\" parse error: %s", e.toString);
+        Json j = Json(["message": Json("invalid or missing text parameter")]);
+        res.writeJsonBody(j, 400);
+        return;
+    }
     if (text.length > 80)
     {
         logError("text is too long");
@@ -171,6 +188,7 @@ void deleteTask(HTTPServerRequest req, HTTPServerResponse res)
         logError("Request parameter \"id\" parse error: %s", e.toString);
         Json j = Json(["message": Json("invalid id")]);
         res.writeJsonBody(j, 400);
+        return;
     }
 
     Task task;
@@ -179,7 +197,7 @@ void deleteTask(HTTPServerRequest req, HTTPServerResponse res)
     {
         logError(e.toString);
         Json j = Json(["message": Json("task not found")]);
-        res.writeJsonBody(j, 500);
+        res.writeJsonBody(j, 404);
         return;
     }
     catch (Exception e)
@@ -197,7 +215,13 @@ version(unittest) {}
 else
 shared static this()
 {
-    db = new PostgresManager("host=postgres dbname=postgres user=postgres password=postgres");
+    string host = environment.get("DB_HOST", "postgres");
+    string dbname = environment.get("DB_NAME", "postgres");
+    string user = environment.get("DB_USER", "postgres");
+    string password = environment.get("DB_PASSWORD", "postgres");
+    string port = environment.get("DB_PORT", "5432");
+    string connString = "host=" ~ host ~ " dbname=" ~ dbname ~ " user=" ~ user ~ " password=" ~ password ~ " port=" ~ port;
+    db = new PostgresManager(connString);
 }
 
 version(unittest) {}

@@ -7,7 +7,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
+    environment:
+      DB_HOST: "postgres"
+      DB_NAME: "postgres"
+      DB_USER: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_PORT: "5432"
     ports:
       - "8080:8080"
   postgres:

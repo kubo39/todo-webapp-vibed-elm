@@ -3,7 +3,7 @@
 FROM buildpack-deps:bookworm AS build
 
 RUN set -eux; \
-    wget -O ldc2-1.41.0-linux-x86_64.tar.xz https://github.com/ldc-developers/ldc/releases/download/v1.40.1/ldc2-1.40.1-linux-x86_64.tar.xz; \
+    wget -O ldc2-1.41.0-linux-x86_64.tar.xz https://github.com/ldc-developers/ldc/releases/download/v1.41.0/ldc2-1.41.0-linux-x86_64.tar.xz; \
     echo "4a439457f0fe59e69d02fd6b57549fc3c87ad0f55ad9fb9e42507b6f8e327c8f *ldc2-1.41.0-linux-x86_64.tar.xz" | sha256sum -c -; \
     tar --strip-components=1 -C /usr/local -Jxf ldc2-1.41.0-linux-x86_64.tar.xz; \
     rm ldc2-1.41.0-linux-x86_64.tar.xz
