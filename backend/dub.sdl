@@ -16,6 +16,11 @@ configuration "application" {
     targetType "executable"
 }
 
+configuration "local" {
+    targetName "server"
+    targetType "executable"
+}
+
 configuration "unittest" {
 	targetType "library"
 }
