@@ -3,7 +3,13 @@
 all: build
 
 build:
-	dub build --config=application
+	@if [ -f /.dockerenv ]; then \
+		echo "Building inside Docker container..."; \
+		dub build --config=application; \
+	else \
+		echo "Building outside Docker container..."; \
+		dub build --config=local; \
+	fi
 
 fetch:
 	dub fetch
