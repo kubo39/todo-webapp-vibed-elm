@@ -128,6 +128,7 @@ public:
     }
 
     /// 新規にTODOタスクを登録
+    /// 注意: INSERT操作では TaskNotFound は発生しない（常に新しい行が作成される）
     Task insertTask(string text)
     {
         return doQuery!INSERT_TASK_QUERY(text);
