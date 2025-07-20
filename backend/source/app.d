@@ -215,12 +215,13 @@ version(unittest) {}
 else
 shared static this()
 {
-    string host = environment.get("DB_HOST", "postgres");
-    string dbname = environment.get("DB_NAME", "postgres");
-    string user = environment.get("DB_USER", "postgres");
-    string password = environment.get("DB_PASSWORD", "postgres");
-    string port = environment.get("DB_PORT", "5432");
-    string connString = "host=" ~ host ~ " dbname=" ~ dbname ~ " user=" ~ user ~ " password=" ~ password ~ " port=" ~ port;
+    const string host = environment.get("DB_HOST", "postgres");
+    const string dbname = environment.get("DB_NAME", "postgres");
+    const string user = environment.get("DB_USER", "postgres");
+    const string password = environment.get("DB_PASSWORD", "postgres");
+    const string port = environment.get("DB_PORT", "5432");
+    const string connString = "host=" ~ host ~ " dbname=" ~ dbname ~ " user=" ~ user ~
+        " password=" ~ password ~ " port=" ~ port;
     db = new PostgresManager(connString);
 }
 
